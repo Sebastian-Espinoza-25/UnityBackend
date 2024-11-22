@@ -17,7 +17,7 @@ public class RouteRequester : MonoBehaviour
     IEnumerator RequestRoute()
     {
         // Crear el JSON que se enviará
-        var jsonData = "{\"start\": {\"latitude\": 19.4326, \"longitude\": -99.1332}, \"destination\": {\"latitude\": 19.4184, \"longitude\": -99.1625}}";
+        var jsonData = "{}";
 
         // Crear la solicitud POST
         using (UnityWebRequest www = new UnityWebRequest(url, "POST"))
@@ -61,7 +61,7 @@ public class RouteRequester : MonoBehaviour
         // Convertir cada punto a Vector3
         foreach (RoutePoint point in routeData.points)
         {
-            routePoints.Add(new Vector3(point.latitude, 5, point.longitude));  // Suponiendo que la latitud es X y la longitud es Z
+            routePoints.Add(new Vector3(point.latitude, 0.5f, point.longitude));  // Suponiendo que la latitud es X y la longitud es Z
         }
 
         return routePoints;

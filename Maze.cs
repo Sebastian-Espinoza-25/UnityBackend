@@ -3,12 +3,12 @@ using System.Collections.Generic;
 
 public class Maze : MonoBehaviour
 {
-    // Listas de vectores para geometría y esquinas del camino
-    List<Vector3> geometry;
+    // Prefab del objeto que se va a instanciar (asigna desde el Inspector)
+    public GameObject carPrefab;  // Variable pública para el prefab
+    private GameObject theCar;  // Referencia al objeto instanciado (el prefab)
+    
+    // Lista de esquinas para el camino
     List<Vector3> cornersInPath;
-    Matrix4x4 baseTransform;
-    GameObject theCar;
-    float hSide = 10.0f / 2.0F;
     Vector3 currentPosition;
     int currentCorner = 0;
     bool isRotating = false;
@@ -20,24 +20,20 @@ public class Maze : MonoBehaviour
 
         // Inicializar la lista de esquinas (puede estar vacía al principio)
         cornersInPath = new List<Vector3>();
-        
     }
 
     void Update()
     {
-        // Si ya estamos en el último waypoint, mantenemos el color verde y no hacemos nada más
+        // Si ya estamos en el último waypoint, no hacemos nada más
         if (currentCorner >= cornersInPath.Count - 1)
         {
-            theCar.GetComponent<MeshRenderer>().material.color = Color.green;
             return;
         }
 
         Vector3 nextCorner = cornersInPath[currentCorner + 1];
         Vector3 direction = VecOps.Normalize(nextCorner - currentPosition);
 
-        // Depurar si la posición del cubo cambia
-        Debug.Log("Posición actual: " + currentPosition);  // Agrega esto para verificar la posición del cubo
-
+        // Si estamos girando, rotamos, de lo contrario, movemos
         if (isRotating)
         {
             RotationFun(direction, nextCorner);
@@ -52,53 +48,8 @@ public class Maze : MonoBehaviour
 
     private void InitializeTheCar()
     {
-        // Inicializar el cubo y agregarle el MeshFilter
-        theCar = new GameObject("TheCar");
-        MeshFilter mf = theCar.AddComponent<MeshFilter>();
-
-        // Definición de los vértices 
-        geometry = new List<Vector3> {
-            new Vector3(-1, -1, 1), 
-            new Vector3(1, -1, 1), 
-            new Vector3(1, 1, 1),
-            new Vector3(-1, 1, 1), 
-            new Vector3(1, -1, -1), 
-            new Vector3(1, 1, -1),
-            new Vector3(-1, -1, -1), 
-            new Vector3(-1, 1, -1)
-        };
-
-        // Definición de la topología 
-        List<int> topology = new List<int> {
-            1, 2, 3, 
-            1, 3, 4, 
-            2, 5, 3, 
-            5, 6, 3, 
-            5, 7, 6, 
-            7, 8, 6,
-            7, 1, 8, 
-            1, 4, 8, 
-            4, 3, 8, 
-            3, 6, 8, 
-            2, 1, 7, 
-            2, 7, 5
-        };
-
-        for (int i = 0; i < topology.Count; i++) topology[i]--;
-
-        //------------------
-        Matrix4x4 scaleMatrix = VecOps.ScaleM(new Vector4(hSide, hSide, hSide, 1));
-        Matrix4x4 translateMatrix = VecOps.TranslateM(new Vector3(hSide * 1, hSide * 1, hSide * 1));
-        baseTransform = translateMatrix * scaleMatrix;
-        List<Vector3> BeginningMatrix = VecOps.ApplyTransform(geometry, baseTransform);
-
-        mf.mesh = new Mesh();
-        mf.mesh.vertices = BeginningMatrix.ToArray();
-        mf.mesh.triangles = topology.ToArray();
-        mf.mesh.RecalculateNormals();
-
-        MeshRenderer mr = theCar.AddComponent<MeshRenderer>();
-        mr.material.color = Color.blue;
+        // Instanciar el prefab en lugar de crear un cubo
+        theCar = Instantiate(carPrefab, Vector3.zero, Quaternion.identity); // Usar la posición inicial adecuada
     }
 
     private void RotationFun(Vector3 direction, Vector3 nextCorner)
@@ -131,16 +82,15 @@ public class Maze : MonoBehaviour
                 currentCorner++;
             }
         }
-
-        // Cambiar el color a magenta mientras el cubo está girando
-        theCar.GetComponent<MeshRenderer>().material.color = Color.magenta;
     }
 
     private void MoveToFun(Vector3 direction, Vector3 nextCorner)
     {
-        currentPosition += direction * 0.1f;
+        // Mover el objeto utilizando el transform y las funciones de VecOps
+        theCar.transform.position += direction * 0.1f;  // Movimiento gradual
 
-        if (Vector3.Distance(currentPosition, nextCorner) < 0.1f)
+        // Verificar si hemos llegado al siguiente punto
+        if (Vector3.Distance(theCar.transform.position, nextCorner) < 0.1f)
         {
             if (currentCorner < cornersInPath.Count - 2)
             {
@@ -151,24 +101,23 @@ public class Maze : MonoBehaviour
                 currentCorner++;
             }
         }
-        else
-        {
-            theCar.GetComponent<MeshRenderer>().material.color = currentCorner > cornersInPath.Count - 3 ? Color.green : Color.blue;
-        }
+
+        currentPosition = theCar.transform.position;  // Actualiza la posición actual
     }
 
     private void ApplyTransformations()
     {
-        Matrix4x4 translationMatrix = VecOps.TranslateM(currentPosition);
+        // Sincronizar la rotación del coche con la dirección de movimiento
+        Vector3 targetDirection = VecOps.Normalize(cornersInPath[currentCorner + 1] - currentPosition);
+        
+        // Usamos VecOps para calcular la rotación
         Matrix4x4 rotationMatrix = VecOps.RotateYM(angleForRot);
-        Matrix4x4 scalingMatrix = VecOps.ScaleM(new Vector4(hSide, hSide, hSide, 1));
-        Matrix4x4 MultiTransform = translationMatrix * rotationMatrix * scalingMatrix;
+        
+        // Aplicar la rotación a la dirección de movimiento
+        theCar.transform.rotation = Quaternion.LookRotation(rotationMatrix * Vector3.forward);  // Rota el objeto hacia la dirección
 
-        List<Vector3> CarVertices = VecOps.ApplyTransform(geometry, MultiTransform);
-        theCar.GetComponent<MeshFilter>().mesh.vertices = CarVertices.ToArray();
-
-        // Verificar que la posición se aplica correctamente
-        Debug.Log("Aplicando transformación. Nueva posición: " + currentPosition);  // Verifica la nueva posición
+        // Si tienes algún tipo de escala adicional, puedes aplicarla aquí, por ejemplo:
+        theCar.transform.localScale = new Vector3(1, 1, 1);  // Escala predeterminada (puedes ajustarla)
     }
 
     // Método para actualizar la ruta (cornersInPath) con los puntos recibidos

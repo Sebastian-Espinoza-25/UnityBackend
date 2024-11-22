@@ -6,11 +6,8 @@ app = Flask(__name__)
 # Predefinir la ruta
 path = [
     {"latitude": 0, "longitude": 0},
-    {"latitude": 5, "longitude": 0},
-    {"latitude": 5, "longitude": 5},
-    {"latitude": 0, "longitude": 5},
-    {"latitude": 0, "longitude": 10},
-    {"latitude": 5, "longitude": 10}
+    {"latitude": 0, "longitude": -25},
+    {"latitude": 25, "longitude": -25},
     
 ]
 
