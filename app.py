@@ -5,9 +5,13 @@ app = Flask(__name__)
 
 # Predefinir la ruta
 path = [
-    {"latitude": 0, "longitude": 0},
-    {"latitude": 0, "longitude": -25},
-    {"latitude": 25, "longitude": -25},
+    {"latitude": 35, "longitude": -45},
+    {"latitude": 45, "longitude": -45},
+    {"latitude": 45, "longitude": -16},
+    {"latitude": 15, "longitude": -16},
+    {"latitude": 15, "longitude": -90},
+    
+    
     
 ]
 
